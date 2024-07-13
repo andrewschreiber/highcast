@@ -11,6 +11,10 @@ export default function Home() {
   const [token, setToken] = useState("");
   const [email, setEmail] = useState("");
 
+  // Raycast arguments are URL encoded, for example:
+  // raycast://extensions/raycast/github/create-issue?arguments={"title":"highligh.ing","space":""}
+  // raycast://extensions/the-browser-company/arc/new-tab?arguments=%7B%22url%22%3A%22highlight.ing%22%2C%22space%22%3A%22%22%7D
+
   const [raycast, setRaycast] = useState("");
 
   useEffect(() => {
