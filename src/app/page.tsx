@@ -11,6 +11,8 @@ export default function Home() {
   const [token, setToken] = useState("");
   const [email, setEmail] = useState("");
 
+  const [raycast, setRaycast] = useState("");
+
   useEffect(() => {
     // On page load, fetch a new access token
     async function fetchToken() {
@@ -49,7 +51,7 @@ export default function Home() {
       <div className="flex flex-col items-center gap-2">
         <h1 className="text-2xl font-bold">Highlight Demo App</h1>
         <p className="text-muted-foreground">
-          This is a demo app to showcase the Highlight Runtime API.
+          Hey you and me. This is a demo app to showcase the Highlight Runtime API.
         </p>
       </div>
 
@@ -67,6 +69,22 @@ export default function Home() {
             <p className="truncate text-muted-foreground">{email}</p>
           </div>
         )}
+        <div className="flex flex-col items-center gap-2  max-w-xl">
+          <p className="text-muted-foreground"> Enter the Raycast Deep Link to open it in Raycast</p>
+          <input
+            type="text"
+            placeholder="Raycast URL" // make font color black, currently white
+            className="input input-primary text-black w-full p-3"
+            value={raycast}
+            onChange={(e) => setRaycast(e.target.value)}
+          />
+        </div>
+
+        <div className="flex flex-col items-center gap-2">
+          <button className="btn btn-primary" onClick={() => open(raycast)}>
+            Open Raycast
+          </button>
+        </div>
 
         {error && (
           <div className="flex flex-row items-center gap-1.5">
