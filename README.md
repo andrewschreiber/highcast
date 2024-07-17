@@ -1,12 +1,12 @@
 # Highcast
-![image](https://github.com/user-attachments/assets/d79f93ef-c238-4b6b-8088-513fbf0270d4)
 
-Run Raycast extensions within Highlight.
+![highcastlogo2](https://github.com/user-attachments/assets/f903480c-7c52-491b-b65f-984d1303f2d1)
+
+Run Raycast extensions within [Highlight](https://www.highlight.ing/).
 
 ## Milestones
 - [x] Logo (july 12)
 - [x] Run a raycast command from witin Highlight
-- []
 
 ## Development
 
