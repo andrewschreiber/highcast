@@ -2,11 +2,12 @@
 
 ![highcastlogo2](https://github.com/user-attachments/assets/f903480c-7c52-491b-b65f-984d1303f2d1)
 
-Run Raycast extensions within [Highlight](https://www.highlight.ing/).
+Run [Raycast]([url](https://github.com/raycast/extensions)) extensions within [Highlight](https://www.highlight.ing/).
 
 ## Milestones
 - [x] Logo (july 12)
-- [x] Run a raycast command from witin Highlight
+- [x] Run a raycast url scheme from witin Highlight
+- [ ] List Raycast script commands
 
 ## Development
 
