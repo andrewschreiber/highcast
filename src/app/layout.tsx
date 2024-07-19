@@ -7,8 +7,8 @@ import { GeistMono } from "geist/font/mono";
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = {
-  title: "Highlight Demo App",
-  description: "Highlight Demo App",
+  title: "Highcast",
+  description: "Activate Raycast commands from Highlight",
 };
 
 interface RootLayoutProps {

@@ -4,7 +4,6 @@ import Highlight from "@highlight-ai/app-runtime";
 import { useEffect, useState } from "react";
 
 import { Key, Mail, TriangleAlert } from "lucide-react";
-import { Logo } from "@/components/logo";
 
 export default function Home() {
   const [error, setError] = useState<string | null>(null);
