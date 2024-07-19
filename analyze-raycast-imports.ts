@@ -40,6 +40,7 @@ async function downloadFile(url: string): Promise<string> {
 async function processFile(fileUrl: string): Promise<void> {
   try {
     const content = await downloadFile(fileUrl);
+    console.log(`Processing file ${fileUrl} with length ${content.length}`);
     parseImports(content);
   } catch (error) {
     console.error(`Error processing file ${fileUrl}:`, error);
@@ -56,8 +57,10 @@ async function processDirectory(
 
   for (const item of data) {
     if (item.type === "dir" && item.name === "extensions") {
+      console.log("Got Dir:", data);
       await processDirectory(repoUrl, item.path);
     } else if (item.type === "dir" && path.startsWith("extensions/")) {
+      console.log("Got Dir 2:", data);
       await processDirectory(repoUrl, item.path);
     } else if (
       item.type === "file" &&
@@ -69,6 +72,7 @@ async function processDirectory(
 }
 
 async function main() {
+  console.log("Analyzing Raycast imports...");
   const repoUrl = "https://api.github.com/repos/raycast/extensions";
 
   try {

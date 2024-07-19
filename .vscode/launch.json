@@ -1,0 +1,18 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Debug Raycast Imports Analysis",
+      "skipFiles": ["<node_internals>/**"],
+      "runtimeArgs": ["-r", "ts-node/register"],
+      "args": ["${workspaceFolder}/analyze-raycast-imports.ts"],
+      "cwd": "${workspaceFolder}",
+      "internalConsoleOptions": "openOnSessionStart",
+      "env": {
+        "TS_NODE_PROJECT": "${workspaceFolder}/tsconfig.node.json"
+      }
+    }
+  ]
+}
