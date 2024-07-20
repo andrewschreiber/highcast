@@ -68,9 +68,9 @@ const ExtensionItem: React.FC<{
         <SquareTerminal className="w-4 h-4 mr-1" />
         <span>{extension.commands.length}</span>
       </div>
-      <div title={extension.author.name} className="flex items-center">
-        {extension.author.avatar ? (
-          <img src={extension.author.avatar} alt={extension.author.name} className="w-6 h-6 rounded-full" />
+      <div title={extension.owner.name} className="flex items-center">
+        {extension.owner.avatar ? (
+          <img src={extension.owner.avatar} alt={extension.owner.name} className="w-6 h-6 rounded-full" />
         ) : (
           <User className="w-6 h-6" />
         )}
