@@ -11,6 +11,13 @@ interface Author {
   avatar: string;
 }
 
+interface Owner {
+  id: string;
+  name: string;
+  handle: string;
+  avatar: string;
+}
+
 interface Icons {
   light: string | null;
   dark: string | null;
@@ -29,6 +36,7 @@ interface Extension {
   title: string;
   description: string;
   author: Author;
+  owner: Owner;
   download_count: number;
   icons: Icons;
   commands: Command[];
@@ -123,7 +131,9 @@ const Home: React.FC = () => {
 
   const handleSelectExtension = async (extension: Extension) => {
     try {
-      const response = await fetch(`https://backend.raycast.com/api/v1/extensions/${extension.author.handle}/${extension.name}`);
+
+      const owner = extension.owner?.handle ?? extension.author.handle;
+      const response = await fetch(`https://backend.raycast.com/api/v1/extensions/${owner}/${extension.name}`);
       if (!response.ok) {
         throw new Error('Network response was not ok');
       }
@@ -131,7 +141,8 @@ const Home: React.FC = () => {
       setSelectedExtension(detailedExtension);
     } catch (error) {
       console.error('Error fetching extension details:', error);
-      setError(`Failed to load extension details. Please try again later.`);
+      setSelectedExtension(null);
+
     }
   };
 
