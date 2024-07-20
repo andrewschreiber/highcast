@@ -1,3 +1,4 @@
+import * as fs from "fs/promises";
 import * as path from "path";
 
 interface ImportCount {
@@ -15,11 +16,9 @@ function parseImports(content: string): void {
   const importRegex =
     /import\s+{([^}]+)}\s+from\s+["'](@raycast\/(?:api|utils))["']/g;
   let match;
-
   while ((match = importRegex.exec(content)) !== null) {
     const imports = match[1].split(",").map((i) => i.trim());
     const packageName = match[2] as keyof typeof raycastImports;
-
     imports.forEach((importName) => {
       if (!raycastImports[packageName][importName]) {
         raycastImports[packageName][importName] = 0;
@@ -29,60 +28,54 @@ function parseImports(content: string): void {
   }
 }
 
-async function downloadFile(url: string): Promise<string> {
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`HTTP error! status: ${response.status}`);
+async function readFile(filePath: string): Promise<string> {
+  try {
+    return await fs.readFile(filePath, "utf8");
+  } catch (error) {
+    console.error(`Error reading file ${filePath}:`, error);
+    return "";
   }
-  return await response.text();
 }
 
-async function processFile(fileUrl: string): Promise<void> {
+async function processFile(filePath: string): Promise<void> {
   try {
-    const content = await downloadFile(fileUrl);
-    console.log(`Processing file ${fileUrl} with length ${content.length}`);
+    const content = await readFile(filePath);
+    console.log(`Processing file ${filePath} with length ${content.length}`);
     parseImports(content);
   } catch (error) {
-    console.error(`Error processing file ${fileUrl}:`, error);
+    console.error(`Error processing file ${filePath}:`, error);
   }
 }
 
-async function processDirectory(
-  repoUrl: string,
-  path: string = "",
-): Promise<void> {
-  const url = `${repoUrl}/contents/${path}`;
-  const response = await fetch(url);
-  const data = await response.json();
-
-  for (const item of data) {
-    if (item.type === "dir" && item.name === "extensions") {
-      console.log("Got Dir:", data);
-      await processDirectory(repoUrl, item.path);
-    } else if (item.type === "dir" && path.startsWith("extensions/")) {
-      console.log("Got Dir 2:", data);
-      await processDirectory(repoUrl, item.path);
-    } else if (
-      item.type === "file" &&
-      (item.name.endsWith(".ts") || item.name.endsWith(".tsx"))
-    ) {
-      await processFile(item.download_url);
+async function processDirectory(dirPath: string): Promise<void> {
+  try {
+    const entries = await fs.readdir(dirPath, { withFileTypes: true });
+    for (const entry of entries) {
+      const fullPath = path.join(dirPath, entry.name);
+      if (entry.isDirectory()) {
+        await processDirectory(fullPath);
+      } else if (
+        entry.isFile() &&
+        (entry.name.endsWith(".ts") || entry.name.endsWith(".tsx"))
+      ) {
+        await processFile(fullPath);
+      }
     }
+  } catch (error) {
+    console.error(`Error processing directory ${dirPath}:`, error);
   }
 }
 
 async function main() {
   console.log("Analyzing Raycast imports...");
-  const repoUrl = "https://api.github.com/repos/raycast/extensions";
-
+  const repoPath = "/Users/andrewschreiber/git/extensions/extensions";
   try {
-    await processDirectory(repoUrl);
-
+    await processDirectory(repoPath);
     console.log("Import tally for @raycast/api:");
     console.log(JSON.stringify(raycastImports["@raycast/api"], null, 2));
-
     console.log("\nImport tally for @raycast/utils:");
     console.log(JSON.stringify(raycastImports["@raycast/utils"], null, 2));
+    console.log("Done!");
   } catch (error) {
     console.error("Error processing repository:", error);
   }
