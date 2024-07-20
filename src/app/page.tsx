@@ -1,83 +1,140 @@
-"use client";
+"use client"
+import React, { useState, useEffect } from 'react';
+import { Search, Download, ChevronRight, SquareTerminal } from 'lucide-react';
 
-import Highlight from "@highlight-ai/app-runtime";
-import { useEffect, useState } from "react";
+interface Author {
+  id: string;
+  name: string;
+  handle: string;
+  avatar: string;
+}
 
-import { Key, Mail, TriangleAlert } from "lucide-react";
+interface Icons {
+  light: string | null;
+  dark: string | null;
+}
 
-export default function Home() {
+interface Command {
+  id: string;
+  name: string;
+  title: string;
+  description: string;
+}
+
+interface Extension {
+  id: string;
+  name: string;
+  title: string;
+  description: string;
+  author: Author;
+  download_count: number;
+  icons: Icons;
+  commands: Command[];
+}
+
+interface ApiResponse {
+  data: Extension[];
+}
+
+const ExtensionItem: React.FC<{
+  icon: string;
+  name: string;
+  description: string;
+  downloads: number;
+  commands: number;
+  verified: boolean;
+}> = ({ icon, name, description, downloads, commands, verified }) => (
+  <div className="flex items-center p-2 hover:bg-gray-700 cursor-pointer">
+    <img src={icon} alt={name} className="w-8 h-8 mr-3" />
+    <div className="flex-grow">
+      <div className="flex items-center">
+        <h3 className="text-white font-semibold">{name}</h3>
+        {verified && <span className="ml-2 text-green-500">✓</span>}
+      </div>
+      <p className="text-gray-400 text-sm">{description}</p>
+    </div>
+    <div className="flex items-center text-gray-400 text-sm">
+      <Download className="w-4 h-4 mr-1" />
+      <span>{(downloads / 1000).toFixed(1)}k</span>
+      <span className="mx-2">•</span>
+      <SquareTerminal className="w-4 h-4 mr-1" />
+      <span>{commands}</span>
+    </div>
+  </div>
+);
+
+const Home: React.FC = () => {
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [extensions, setExtensions] = useState<Extension[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [token, setToken] = useState("");
-  const [email, setEmail] = useState("");
-
-  // Raycast arguments are URL encoded, for example:
-  // raycast://extensions/raycast/github/create-issue?arguments={"title":"highligh.ing","space":""}
-  // raycast://extensions/the-browser-company/arc/new-tab?arguments=%7B%22url%22%3A%22highlight.ing%22%2C%22space%22%3A%22%22%7D
-
-
-  const [raycast, setRaycast] = useState("");
 
   useEffect(() => {
-    // On page load, fetch a new access token
-    async function fetchToken() {
+    console.log('fetching extensions')
+    const fetchExtensions = async () => {
       try {
-        const { accessToken, refreshToken } = await Highlight.auth.signIn();
-        setToken(accessToken);
+        const response = await fetch('https://backend.raycast.com/api/v1/extensions/trending');
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        } else {
+          console.log('response ok')
+        }
+        const data: ApiResponse = await response.json();
+        setExtensions(data.data);
+        setLoading(false);
       } catch (error) {
-        setError("Failed to fetch token");
+        console.error('Error fetching extensions:', error);
+        setError(`Failed to load extensions. Please try again later. Error: ${error}`);
+        setLoading(false);
       }
-    }
+    };
 
-    async function fetchEmail() {
-      try {
-        const email = await Highlight.user.getEmail();
-
-        setEmail(email);
-      } catch (error) {
-        setError("Failed to fetch email");
-      }
-    }
-
-    fetchToken();
-    fetchEmail();
+    fetchExtensions();
   }, []);
 
-  useEffect(() => {
-    Highlight.addEventListener("onContext", (context: any) => {
-      console.log("Got this context", context);
-    });
-  }, []);
+  if (loading) {
+    return <div className="text-white">Loading...</div>;
+  }
+
+  if (error) {
+    return <div className="text-red-500">{error}</div>;
+  }
 
   return (
-    <div className="flex h-svh flex-col items-center justify-center gap-4">
-
-      <div className="flex flex-col items-center gap-2">
-        <h1 className="text-2xl font-bold">Highcast</h1>
-      </div>
-
-      <div className="flex flex-col items-center gap-2  max-w-xl">
-        <p className="text-muted-foreground"> Enter the Raycast Deep Link to open it in Raycast</p>
+    <div className="bg-gray-900 text-white h-screen p-4">
+      <div className="mb-4 flex items-center bg-gray-800 rounded-md p-2">
+        <Search className="text-gray-400 mr-2" />
         <input
           type="text"
-          placeholder="Raycast URL" // make font color black, currently white
-          className="input input-primary text-black w-full p-3"
-          value={raycast}
-          onChange={(e) => setRaycast(e.target.value)}
+          placeholder="Search Raycast Store for extensions..."
+          className="bg-transparent border-none outline-none text-white w-full"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
         />
       </div>
 
-      <div className="flex flex-col items-center gap-2">
-        <button className="btn btn-primary" onClick={() => open(raycast)}>
-          Open Raycast
-        </button>
-      </div>
+      <h2 className="text-lg font-semibold mb-2">Trending</h2>
+      {extensions.map(ext => (
+        <ExtensionItem
+          key={ext.id}
+          name={ext.title}
+          description={ext.description}
+          downloads={ext.download_count}
+          commands={ext.commands.length}
+          icon={ext.icons.light || ext.icons.dark || ''}
+          verified={ext.author.handle === 'raycast'}
+        />
+      ))}
 
-      {error && (
-        <div className="flex flex-row items-center gap-1.5">
-          <TriangleAlert className="size-4 shrink-0 text-destructive" />
-          <p className="text-destructive">{error}</p>
+      <div className="mt-4 flex items-center justify-between p-2 hover:bg-gray-700 cursor-pointer">
+        <span className="text-gray-400">Store</span>
+        <div className="flex items-center">
+          <span className="mr-2 text-gray-400">Show Details</span>
+          <ChevronRight className="text-gray-400" />
         </div>
-      )}
-    </div >
+      </div>
+    </div>
   );
 }
+
+export default Home;
