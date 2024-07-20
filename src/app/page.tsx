@@ -1,6 +1,6 @@
 "use client"
 import React, { useState, useEffect } from 'react';
-import { Search, Download, ChevronRight, SquareTerminal } from 'lucide-react';
+import { Search, Download, ChevronRight, SquareTerminal, User } from 'lucide-react';
 
 interface Author {
   id: string;
@@ -43,7 +43,9 @@ const ExtensionItem: React.FC<{
   downloads: number;
   commands: number;
   verified: boolean;
-}> = ({ icon, name, description, downloads, commands, verified }) => (
+  authorName: string;
+  authorAvatar: string;
+}> = ({ icon, name, description, downloads, commands, verified, authorName, authorAvatar }) => (
   <div className="flex items-center p-2 hover:bg-gray-700 cursor-pointer">
     <img src={icon} alt={name} className="w-8 h-8 mr-3" />
     <div className="flex-grow">
@@ -54,14 +56,25 @@ const ExtensionItem: React.FC<{
       <p className="text-gray-400 text-sm">{description}</p>
     </div>
     <div className="flex items-center text-gray-400 text-sm">
-      <Download className="w-4 h-4 mr-1" />
-      <span>{(downloads / 1000).toFixed(1)}k</span>
-      <span className="mx-2">•</span>
-      <SquareTerminal className="w-4 h-4 mr-1" />
-      <span>{commands}</span>
+      <div title={`${downloads.toLocaleString()} downloads`} className="flex items-center mr-3">
+        <Download className="w-4 h-4 mr-1" />
+        <span>{(downloads / 1000).toFixed(1)}k</span>
+      </div>
+      <div title={`${commands} commands`} className="flex items-center mr-3">
+        <SquareTerminal className="w-4 h-4 mr-1" />
+        <span>{commands}</span>
+      </div>
+      <div title={authorName} className="flex items-center">
+        {authorAvatar ? (
+          <img src={authorAvatar} alt={authorName} className="w-6 h-6 rounded-full" />
+        ) : (
+          <User className="w-6 h-6" />
+        )}
+      </div>
     </div>
   </div>
 );
+
 
 const Home: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -73,7 +86,7 @@ const Home: React.FC = () => {
     console.log('fetching extensions')
     const fetchExtensions = async () => {
       try {
-        const response = await fetch('https://backend.raycast.com/api/v1/extensions/trending');
+        const response = await fetch('https://backend.raycast.com/api/v1/extensions/trending?page=1&per_page=25');
         if (!response.ok) {
           throw new Error('Network response was not ok');
         } else {
@@ -123,6 +136,8 @@ const Home: React.FC = () => {
           commands={ext.commands.length}
           icon={ext.icons.light || ext.icons.dark || ''}
           verified={ext.author.handle === 'raycast'}
+          authorName={ext.author.name}
+          authorAvatar={ext.author.avatar}
         />
       ))}
 
