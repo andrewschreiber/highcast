@@ -1,6 +1,8 @@
 "use client"
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Search, Download, ChevronRight, SquareTerminal, User } from 'lucide-react';
+
+import ExtensionDetailView from './ExtensionDetailView';
 
 interface Author {
   id: string;
@@ -37,36 +39,30 @@ interface ApiResponse {
 }
 
 const ExtensionItem: React.FC<{
-  icon: string;
-  name: string;
-  description: string;
-  downloads: number;
-  commands: number;
-  verified: boolean;
-  authorName: string;
-  authorAvatar: string;
-}> = ({ icon, name, description, downloads, commands, verified, authorName, authorAvatar }) => (
-  <div className="flex items-center p-2 hover:bg-gray-700 cursor-pointer">
-    <img src={icon} alt={name} className="w-8 h-8 mr-3" />
+  extension: Extension;
+  onSelect: (extension: Extension) => void;
+}> = ({ extension, onSelect }) => (
+  <div className="flex items-center p-2 hover:bg-gray-700 cursor-pointer" onClick={() => onSelect(extension)}>
+    <img src={extension.icons.light || extension.icons.dark || ''} alt={extension.title} className="w-8 h-8 mr-3" />
     <div className="flex-grow">
       <div className="flex items-center">
-        <h3 className="text-white font-semibold">{name}</h3>
-        {verified && <span className="ml-2 text-green-500">✓</span>}
+        <h3 className="text-white font-semibold">{extension.title}</h3>
+        {extension.author.handle === 'raycast' && <span className="ml-2 text-green-500">✓</span>}
       </div>
-      <p className="text-gray-400 text-sm">{description}</p>
+      <p className="text-gray-400 text-sm">{extension.description}</p>
     </div>
-    <div className="flex items-center text-gray-400 text-sm">
-      <div title={`${downloads.toLocaleString()} downloads`} className="flex items-center mr-3">
+    <div className="flex items-center text-gray-400 text-sm space-x-4">
+      <div title={`${extension.download_count.toLocaleString()} downloads`} className="flex items-center">
         <Download className="w-4 h-4 mr-1" />
-        <span>{(downloads / 1000).toFixed(1)}k</span>
+        <span>{(extension.download_count / 1000).toFixed(1)}k</span>
       </div>
-      <div title={`${commands} commands`} className="flex items-center mr-3">
+      <div title={`${extension.commands.length} commands`} className="flex items-center">
         <SquareTerminal className="w-4 h-4 mr-1" />
-        <span>{commands}</span>
+        <span>{extension.commands.length}</span>
       </div>
-      <div title={authorName} className="flex items-center">
-        {authorAvatar ? (
-          <img src={authorAvatar} alt={authorName} className="w-6 h-6 rounded-full" />
+      <div title={extension.author.name} className="flex items-center">
+        {extension.author.avatar ? (
+          <img src={extension.author.avatar} alt={extension.author.name} className="w-6 h-6 rounded-full" />
         ) : (
           <User className="w-6 h-6" />
         )}
@@ -75,42 +71,72 @@ const ExtensionItem: React.FC<{
   </div>
 );
 
-
 const Home: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [extensions, setExtensions] = useState<Extension[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedExtension, setSelectedExtension] = useState<Extension | null>(null);
 
-  useEffect(() => {
-    console.log('fetching extensions')
-    const fetchExtensions = async () => {
-      try {
-        const response = await fetch('https://backend.raycast.com/api/v1/extensions/trending?page=1&per_page=25');
-        if (!response.ok) {
-          throw new Error('Network response was not ok');
-        } else {
-          console.log('response ok')
-        }
-        const data: ApiResponse = await response.json();
-        setExtensions(data.data);
-        setLoading(false);
-      } catch (error) {
-        console.error('Error fetching extensions:', error);
-        setError(`Failed to load extensions. Please try again later. Error: ${error}`);
-        setLoading(false);
+  const fetchExtensions = useCallback(async (query: string = '') => {
+    setLoading(true);
+    setError(null);
+    try {
+      const endpoint = query
+        ? `https://backend.raycast.com/api/v1/store_listings/search?page=1&q=${encodeURIComponent(query)}&include_native=true&per_page=25`
+        : 'https://backend.raycast.com/api/v1/extensions/trending?page=1&per_page=25';
+
+      const response = await fetch(endpoint);
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
       }
-    };
-
-    fetchExtensions();
+      const data: ApiResponse = await response.json();
+      setExtensions(data.data);
+    } catch (error) {
+      console.error('Error fetching extensions:', error);
+      setError(`Failed to load extensions. Please try again later. Error: ${error}`);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  if (loading) {
-    return <div className="text-white">Loading...</div>;
-  }
+  const debouncedFetch = useCallback(
+    (query: string) => fetchExtensions(query),
+    [fetchExtensions]
+  );
 
-  if (error) {
-    return <div className="text-red-500">{error}</div>;
+  useEffect(() => {
+    fetchExtensions();
+  }, [fetchExtensions]);
+
+  useEffect(() => {
+    if (searchQuery) {
+      debouncedFetch(searchQuery);
+    } else {
+      fetchExtensions();
+    }
+  }, [searchQuery, debouncedFetch, fetchExtensions]);
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+  };
+
+  const handleSelectExtension = async (extension: Extension) => {
+    try {
+      const response = await fetch(`https://backend.raycast.com/api/v1/extensions/${extension.author.handle}/${extension.name}`);
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      const detailedExtension = await response.json();
+      setSelectedExtension(detailedExtension);
+    } catch (error) {
+      console.error('Error fetching extension details:', error);
+      setError(`Failed to load extension details. Please try again later.`);
+    }
+  };
+
+  if (selectedExtension) {
+    return <ExtensionDetailView extension={selectedExtension} onBack={() => setSelectedExtension(null)} />;
   }
 
   return (
@@ -122,24 +148,27 @@ const Home: React.FC = () => {
           placeholder="Search Raycast Store for extensions..."
           className="bg-transparent border-none outline-none text-white w-full"
           value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
+          onChange={handleSearchChange}
         />
       </div>
 
-      <h2 className="text-lg font-semibold mb-2">Trending</h2>
-      {extensions.map(ext => (
-        <ExtensionItem
-          key={ext.id}
-          name={ext.title}
-          description={ext.description}
-          downloads={ext.download_count}
-          commands={ext.commands.length}
-          icon={ext.icons.light || ext.icons.dark || ''}
-          verified={ext.author.handle === 'raycast'}
-          authorName={ext.author.name}
-          authorAvatar={ext.author.avatar}
-        />
-      ))}
+      <h2 className="text-lg font-semibold mb-2">{searchQuery ? 'Search Results' : 'Trending'}</h2>
+
+      {loading ? (
+        <div className="text-white">Loading...</div>
+      ) : error ? (
+        <div className="text-red-500">{error}</div>
+      ) : extensions.length === 0 ? (
+        <div className="text-gray-400">No extensions found</div>
+      ) : (
+        extensions.map(ext => (
+          <ExtensionItem
+            key={ext.id}
+            extension={ext}
+            onSelect={handleSelectExtension}
+          />
+        ))
+      )}
 
       <div className="mt-4 flex items-center justify-between p-2 hover:bg-gray-700 cursor-pointer">
         <span className="text-gray-400">Store</span>
